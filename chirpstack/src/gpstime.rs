@@ -1,3 +1,37 @@
+/**
+ * @module gpstime
+ * 
+ * @description
+ * 
+ * # 模块概述
+ * 本模块提供GPS时间与UTC时间之间的转换功能。在LoRaWAN网络中，特别是Class B设备和某些
+ * 精确定时操作中，需要使用GPS时间作为参考。GPS时间从1980年1月6日开始计算，与UTC时间
+ * 存在闰秒差异，因此需要特殊的转换机制。
+ * 
+ * # 文件功能
+ * - 定义GPS时间起点（1980年1月6日）
+ * - 维护闰秒表，记录UTC时间中添加的闰秒
+ * - 提供UTC时间转换为GPS时间的功能
+ * - 提供GPS时间转换为UTC时间的功能
+ * 
+ * # 主要组件
+ * - ToGpsTime trait：将UTC时间转换为GPS时间的接口
+ * - ToDateTime trait：将GPS时间转换为UTC时间的接口
+ * - GPS_EPOCH_TIME：GPS时间的起始点常量
+ * - LEAP_SECONDS_TABLE：记录所有闰秒的表格
+ * 
+ * # 关键流程
+ * - 计算UTC时间与GPS起始时间的差值
+ * - 根据闰秒表调整时间差，考虑闰秒的影响
+ * - 在两个时间系统之间进行精确转换
+ * 
+ * # 重要考虑事项
+ * - GPS时间不考虑闰秒，而UTC时间会定期添加闰秒
+ * - 闰秒表需要定期更新以反映新增的闰秒
+ * - 时间转换在LoRaWAN Class B设备的ping slot计算中尤为重要
+ * - 精确的时间同步对于某些LoRaWAN功能至关重要
+ */
+
 use chrono::{DateTime, Duration, TimeZone, Utc};
 
 lazy_static! {

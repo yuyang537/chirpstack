@@ -1,3 +1,38 @@
+/**
+ * @module user
+ * 
+ * @description
+ * 
+ * # 模块概述
+ * 本模块实现了ChirpStack系统中用户管理的核心功能，包括用户的创建、查询、更新和删除操作。
+ * 用户是ChirpStack系统的基本管理单元，拥有不同的权限级别和访问控制。
+ * 
+ * # 文件功能
+ * - 定义User结构体，表示系统中的用户实体
+ * - 提供用户密码的安全哈希和验证功能
+ * - 实现用户的CRUD（创建、读取、更新、删除）操作
+ * - 支持通过多种方式查询用户（ID、邮箱、外部ID等）
+ * - 提供用户认证和密码验证功能
+ * 
+ * # 主要组件
+ * - User：用户实体结构体，包含用户的所有属性
+ * - create/get/update/delete：用户的基本CRUD操作
+ * - get_by_email/get_by_external_id：通过特定属性查询用户
+ * - hash_password/verify_password：密码哈希和验证功能
+ * 
+ * # 关键流程
+ * - 用户创建：生成UUID，设置默认值，哈希密码，存储到数据库
+ * - 用户认证：通过邮箱和密码验证用户身份
+ * - 密码管理：使用PBKDF2算法进行密码哈希和验证
+ * - 用户查询：支持多种查询方式，包括分页列表查询
+ * 
+ * # 重要考虑事项
+ * - 密码使用PBKDF2-SHA512算法进行哈希，提供安全保护
+ * - 用户邮箱需要验证格式有效性
+ * - 支持外部身份提供者集成，通过external_id字段
+ * - 用户可以具有管理员权限(is_admin)和活动状态(is_active)
+ */
+
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use diesel::{dsl, prelude::*};

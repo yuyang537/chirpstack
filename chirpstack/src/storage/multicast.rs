@@ -1,3 +1,44 @@
+/**
+ * 模块概述：
+ * multicast模块负责ChirpStack系统中多播组（Multicast Group）的管理功能。多播组允许向多个设备
+ * 同时发送下行消息，这在需要同时更新多个设备或向多个设备发送相同命令时非常有用。该模块提供了
+ * 创建、查询、更新和删除多播组的功能，以及管理多播组成员（设备和网关）和多播下行队列的能力。
+ * 
+ * 文件功能：
+ * 本文件实现了多播组的存储和检索逻辑，包括：
+ * 1. 多播组的CRUD操作（创建、读取、更新、删除）
+ * 2. 多播组成员（设备和网关）的管理
+ * 3. 多播下行队列的管理和调度
+ * 4. 支持Class B和Class C类型的多播组
+ * 
+ * 主要组件：
+ * - MulticastGroup：表示一个多播组，包含ID、名称、地址、密钥等信息
+ * - MulticastGroupQueueItem：表示多播下行队列中的一个项目
+ * - Filters：用于过滤多播组列表的条件
+ * - 各种CRUD函数：create、get、update、delete等
+ * - 成员管理函数：add_device、remove_device、add_gateway、remove_gateway等
+ * - 队列管理函数：enqueue、delete_queue_item、flush_queue等
+ * 
+ * 关键流程：
+ * 1. 多播组创建：设置多播地址、网络会话密钥、应用会话密钥等参数
+ * 2. 成员管理：添加/移除设备和网关到多播组
+ * 3. 下行消息入队：根据多播组类型（Class B或Class C）计算调度时间
+ *    - Class B：计算下一个ping时隙
+ *    - Class C：根据调度类型（延迟或GPS时间）设置发送时间
+ * 4. 队列处理：获取可调度的队列项目并发送到相应的网关
+ * 
+ * 注意事项：
+ * 1. 多播组有两种类型：
+ *    - Class B：使用ping时隙进行下行通信，需要设备处于Class B模式
+ *    - Class C：设备持续接收，可以随时发送下行消息
+ * 2. Class C多播组有两种调度类型：
+ *    - DELAY：使用延迟调度，每个网关的发送时间依次递增
+ *    - GPS_TIME：使用GPS时间调度，所有网关同时发送
+ * 3. 多播组的设备必须属于同一个应用，网关必须属于同一个租户
+ * 4. 帧计数器（f_cnt）在每次入队操作后递增，以防止重放攻击
+ * 5. 队列项目可以设置过期时间，过期后将不再发送
+ */
+
 use anyhow::{Context, Result};
 use chrono::{DateTime, Duration, Utc};
 use diesel::{dsl, prelude::*};

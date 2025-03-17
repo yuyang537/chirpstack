@@ -1,3 +1,60 @@
+/*
+ * 模块概述
+ * ========
+ * OTAA被动漫游(Passive Roaming)测试模块是ChirpStack LoRaWAN网络服务器测试框架的重要组成部分，
+ * 专门用于测试LoRaWAN设备在被动漫游场景下的空中激活(OTAA)功能。这种场景结合了OTAA和被动漫游
+ * 两个功能，允许终端设备在访问网络(Visited Network)中通过漫游协议与其归属网络(Home Network)
+ * 进行激活。
+ * 
+ * 该模块实现了一系列测试用例，覆盖了漫游OTAA的各个方面，包括转发网络服务器(Forwarding NS)和
+ * 服务网络服务器(Serving NS)的角色测试、Join-Request消息处理、Join Server交互等。通过这些测试，
+ * 确保ChirpStack能够正确实现LoRaWAN协议规范中关于漫游OTAA的所有要求。
+ * 
+ * 测试采用了模拟(Mock)技术来模拟网关、Join Server和外部网络服务器，使得测试可以在不依赖实际
+ * 硬件和外部服务的情况下运行，同时保持测试的真实性和完整性。
+ *
+ * 文件功能
+ * ========
+ * 本文件(otaa_pr_test.rs)实现了被动漫游场景下的OTAA测试用例，提供了以下主要功能：
+ * 1. 转发网络服务器(FNS)测试：验证ChirpStack作为FNS时的Join-Request处理
+ * 2. 服务网络服务器(SNS)测试：验证ChirpStack作为SNS时的Join-Request处理
+ * 3. 漫游不允许测试：验证当漫游不被允许时的错误处理
+ *
+ * 主要组件
+ * ========
+ * - test_fns(): 测试ChirpStack作为FNS时的Join-Request处理
+ * - test_sns(): 测试ChirpStack作为SNS时的Join-Request处理
+ * - test_sns_roaming_not_allowed(): 测试漫游不允许的情况
+ *
+ * 关键流程
+ * ========
+ * 1. FNS测试流程:
+ *    - 准备测试环境(租户、应用、设备配置等)
+ *    - 设置模拟Join Server和SNS服务器
+ *    - 处理模拟的Join-Request上行消息
+ *    - 验证FNS向Join Server发送的请求
+ *    - 验证FNS向SNS发送的JoinReq请求
+ *    - 验证FNS处理SNS的JoinAns响应
+ *    - 验证Join-Accept下行消息的生成
+ *
+ * 2. SNS测试流程:
+ *    - 准备测试环境(租户、应用、设备配置等)
+ *    - 设置模拟Join Server和FNS服务器
+ *    - 接收并处理FNS发送的JoinReq请求
+ *    - 验证SNS向Join Server发送的请求
+ *    - 发送JoinAns响应给FNS
+ *    - 验证设备会话的创建
+ *
+ * 注意事项
+ * ========
+ * - 测试隔离: 每个测试用例都应该是独立的，不依赖其他测试的状态
+ * - 资源清理: 测试应该清理它创建的所有资源，避免影响其他测试
+ * - 断言全面性: 断言应该全面验证测试结果，包括设备会话、HTTP请求等
+ * - 协议版本: 测试应考虑不同版本的LoRaWAN协议和后端接口规范
+ * - 安全考虑: 测试应验证漫游通信和OTAA的安全机制
+ * - 错误处理: 测试应验证各种错误情况的处理，确保系统的健壮性
+ */
+
 use std::str::FromStr;
 
 use bytes::Bytes;
@@ -396,7 +453,6 @@ async fn test_sns() {
                     result_code: backend::ResultCode::Success,
                     ..Default::default()
                 },
-                ..Default::default()
             },
             phy_payload: vec![
                 32, 62, 206, 177, 148, 31, 33, 193, 200, 4, 185, 248, 156, 108, 64, 97, 1

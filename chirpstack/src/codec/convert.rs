@@ -1,3 +1,48 @@
+/*
+ * 模块概述
+ * ========
+ * 该模块是ChirpStack LoRaWAN网络服务器的数据转换工具，用于在不同数据格式之间进行转换。
+ * 在ChirpStack的编解码器系统中，需要在JavaScript运行时、Protocol Buffers和JSON等不同格式间转换数据。
+ * 该模块提供了这些转换功能，确保数据在不同系统组件间能够无缝流动。
+ *
+ * 文件功能
+ * ========
+ * 该文件实现了在QuickJS JavaScript引擎值、Protocol Buffers结构和JSON格式之间的转换功能。
+ * 它提供了双向转换函数，支持复杂的嵌套数据结构，并处理特殊情况如NaN值。
+ * 主要功能包括将JavaScript对象转换为Protocol Buffers结构，以及反向转换。
+ *
+ * 主要组件
+ * ========
+ * - rquickjs_to_struct(): 将QuickJS值转换为Protocol Buffers结构
+ * - _rquickjs_to_struct_val(): 递归处理QuickJS值的内部辅助函数
+ * - struct_to_rquickjs(): 将Protocol Buffers结构转换为QuickJS对象
+ * - _struct_to_rquickjs(): 递归处理Protocol Buffers值的内部辅助函数
+ * - pb_json_to_prost(): 在不同Protocol Buffers实现之间转换
+ *
+ * 关键流程
+ * ========
+ * 1. JavaScript到Protocol Buffers转换流程:
+ *    - 接收QuickJS JavaScript引擎中的值
+ *    - 根据值的类型(布尔、数字、字符串、数组、对象)进行相应转换
+ *    - 处理特殊情况，如NaN值
+ *    - 递归处理嵌套结构
+ *    - 返回转换后的Protocol Buffers结构
+ *
+ * 2. Protocol Buffers到JavaScript转换流程:
+ *    - 接收Protocol Buffers结构
+ *    - 根据值的类型进行相应转换
+ *    - 递归处理嵌套结构
+ *    - 返回转换后的QuickJS对象
+ *
+ * 注意事项
+ * ========
+ * - 数据类型转换可能导致精度损失，特别是在处理浮点数时
+ * - NaN值在Protocol Buffers中无法表示，需要特殊处理
+ * - 复杂的嵌套结构可能导致转换性能下降
+ * - JavaScript对象的属性名在转换为Protocol Buffers时会保留
+ * - 在处理大量数据时，转换性能可能成为瓶颈
+ */
+
 pub fn rquickjs_to_struct(val: &rquickjs::Value) -> pbjson_types::Struct {
     if val.type_of() == rquickjs::Type::Object {
         if let Some(pbjson_types::value::Kind::StructValue(v)) = _rquickjs_to_struct_val(val) {

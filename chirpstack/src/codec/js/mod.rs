@@ -1,3 +1,51 @@
+/*
+ * 模块概述
+ * ========
+ * 该模块是ChirpStack LoRaWAN网络服务器的JavaScript编解码器实现，提供了使用JavaScript处理设备数据的能力。
+ * 在LoRaWAN应用中，JavaScript编解码器允许用户编写自定义脚本来处理特定设备的数据格式，提供了最大的灵活性。
+ * 该模块使用QuickJS引擎执行JavaScript代码，支持设备上行数据解码和下行数据编码功能。
+ *
+ * 文件功能
+ * ========
+ * 该文件实现了JavaScript编解码器的核心功能，包括JavaScript运行时环境的设置、脚本执行和错误处理。
+ * 它提供了decode和encode两个主要函数，分别用于解码设备上行数据和编码下行命令数据。
+ * 同时，它集成了Buffer、base64-js等JavaScript库，使编解码脚本能够处理二进制数据。
+ *
+ * 主要组件
+ * ========
+ * - decode(): 执行JavaScript解码函数，将二进制数据转换为结构化数据
+ * - encode(): 执行JavaScript编码函数，将结构化数据转换为二进制数据
+ * - JavaScript运行时: 基于QuickJS的轻量级JavaScript引擎
+ * - 内置模块: Buffer, base64-js, ieee754等用于二进制数据处理的模块
+ * - 测试函数: 用于验证编解码器功能的单元测试
+ *
+ * 关键流程
+ * ========
+ * 1. 解码流程:
+ *    - 初始化JavaScript运行时环境
+ *    - 加载用户提供的解码脚本
+ *    - 准备输入参数(fPort, bytes等)
+ *    - 执行decode函数
+ *    - 将JavaScript返回值转换为Protocol Buffers结构
+ *    - 处理执行超时和错误情况
+ *
+ * 2. 编码流程:
+ *    - 初始化JavaScript运行时环境
+ *    - 加载用户提供的编码脚本
+ *    - 准备输入参数(fPort, object等)
+ *    - 执行encode函数
+ *    - 将JavaScript返回的数组转换为二进制数据
+ *    - 处理执行超时和错误情况
+ *
+ * 注意事项
+ * ========
+ * - JavaScript执行有最大运行时间限制，以防止无限循环
+ * - 编解码脚本必须遵循特定的接口约定(函数名和参数)
+ * - 错误处理至关重要，脚本错误不应影响整个系统
+ * - 内存使用应受到监控，防止内存泄漏
+ * - 在生产环境中，应谨慎使用复杂的JavaScript编解码器，考虑性能影响
+ */
+
 use std::collections::HashMap;
 use std::time::SystemTime;
 

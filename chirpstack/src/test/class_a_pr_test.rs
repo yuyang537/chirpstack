@@ -1,3 +1,61 @@
+/*
+ * 模块概述
+ * ========
+ * Class A被动漫游(Passive Roaming)测试模块是ChirpStack LoRaWAN网络服务器测试框架的重要组成部分，
+ * 专门用于测试LoRaWAN Class A设备在被动漫游场景下的通信功能。被动漫游是LoRaWAN协议中的一项
+ * 重要功能，允许终端设备在访问网络(Visited Network)中通过漫游协议与其归属网络(Home Network)
+ * 通信。
+ * 
+ * 该模块实现了一系列测试用例，覆盖了被动漫游的各个方面，包括转发网络服务器(Forwarding NS)和
+ * 服务网络服务器(Serving NS)的角色测试、上行消息处理、下行消息转发等。通过这些测试，确保
+ * ChirpStack能够正确实现LoRaWAN协议规范中关于被动漫游的所有要求。
+ * 
+ * 测试采用了模拟(Mock)技术来模拟网关、Join Server和外部网络服务器，使得测试可以在不依赖实际
+ * 硬件和外部服务的情况下运行，同时保持测试的真实性和完整性。
+ *
+ * 文件功能
+ * ========
+ * 本文件(class_a_pr_test.rs)实现了Class A设备被动漫游的测试用例，提供了以下主要功能：
+ * 1. 转发网络服务器(FNS)上行测试：验证ChirpStack作为FNS时的上行消息处理
+ * 2. 服务网络服务器(SNS)上行测试：验证ChirpStack作为SNS时的上行消息处理
+ * 3. 漫游不允许测试：验证当漫游不被允许时的错误处理
+ * 4. 设备不存在测试：验证当设备不存在时的错误处理
+ *
+ * 主要组件
+ * ========
+ * - test_fns_uplink(): 测试ChirpStack作为FNS时的上行消息处理
+ * - test_sns_uplink(): 测试ChirpStack作为SNS时的上行消息处理
+ * - test_sns_roaming_not_allowed(): 测试漫游不允许的情况
+ * - test_sns_dev_not_found(): 测试设备不存在的情况
+ *
+ * 关键流程
+ * ========
+ * 1. FNS上行测试流程:
+ *    - 准备测试环境(租户、应用、设备配置等)
+ *    - 设置模拟SNS服务器
+ *    - 处理模拟的上行消息
+ *    - 验证FNS向SNS发送的PRStartReq请求
+ *    - 验证FNS处理SNS的PRStartAns响应
+ *    - 验证FNS向SNS发送的ULMetaData请求
+ *
+ * 2. SNS上行测试流程:
+ *    - 准备测试环境(租户、应用、设备配置等)
+ *    - 设置模拟FNS服务器
+ *    - 接收并处理FNS发送的PRStartReq请求
+ *    - 发送PRStartAns响应
+ *    - 接收并处理FNS发送的ULMetaData请求
+ *    - 验证设备状态和集成事件
+ *
+ * 注意事项
+ * ========
+ * - 测试隔离: 每个测试用例都应该是独立的，不依赖其他测试的状态
+ * - 资源清理: 测试应该清理它创建的所有资源，避免影响其他测试
+ * - 断言全面性: 断言应该全面验证测试结果，包括设备状态、HTTP请求等
+ * - 协议版本: 测试应考虑不同版本的LoRaWAN后端接口规范
+ * - 安全考虑: 测试应验证漫游通信的安全机制
+ * - 错误处理: 测试应验证各种错误情况的处理，确保系统的健壮性
+ */
+
 use std::str::FromStr;
 
 use bytes::Bytes;
@@ -403,7 +461,6 @@ async fn test_sns_uplink() {
                     result_code: backend::ResultCode::Success,
                     ..Default::default()
                 },
-                ..Default::default()
             },
             dev_eui: dev.dev_eui.to_vec(),
             nwk_s_key: Some(backend::KeyEnvelope {

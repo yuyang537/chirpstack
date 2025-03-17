@@ -1,3 +1,54 @@
+/*
+ * 模块概述
+ * ========
+ * device_keys模块提供了用于管理LoRaWAN设备密钥的存储和检索功能。设备密钥是LoRaWAN安全
+ * 架构的核心组件，包括网络密钥(NwkKey)和应用密钥(AppKey)，用于设备激活、消息加密和
+ * 完整性保护。此外，该模块还管理设备随机数(DevNonces)和连接计数器(JoinNonce)，用于
+ * 防止重放攻击和确保安全的设备激活过程。
+ * 
+ * 该模块使用关系型数据库(PostgreSQL或SQLite)作为存储后端，提供了完整的CRUD操作和
+ * 事务支持。设备密钥数据通过设备的EUI(扩展唯一标识符)进行索引，确保每个设备的密钥
+ * 信息能够被安全地存储和检索。
+ *
+ * 文件功能
+ * ========
+ * 本文件(device_keys.rs)实现了设备密钥的存储和管理功能，提供了以下主要功能：
+ * 1. 创建、读取、更新和删除设备密钥记录
+ * 2. 管理设备随机数(DevNonces)，防止重放攻击
+ * 3. 验证和递增连接计数器(JoinNonce)
+ * 4. 支持OTAA(空中激活)过程中的安全验证
+ *
+ * 主要组件
+ * ========
+ * - DeviceKeys结构体: 定义设备密钥数据模型，包括EUI、密钥和计数器
+ * - create/get/update/delete函数: 提供基本的CRUD操作
+ * - set_dev_nonces函数: 更新设备的随机数集合
+ * - validate_incr_join_and_store_dev_nonce函数: 验证设备随机数并递增连接计数器
+ * - 测试模块: 提供单元测试和辅助函数
+ *
+ * 关键流程
+ * ========
+ * 1. 设备激活验证流程:
+ *    - 设备发送Join请求，包含DevEUI、JoinEUI和DevNonce
+ *    - 通过validate_incr_join_and_store_dev_nonce函数验证DevNonce是否已使用
+ *    - 如果验证通过，递增JoinNonce并存储新的DevNonce
+ *    - 返回更新后的DeviceKeys，用于生成会话密钥
+ *
+ * 2. 设备密钥管理流程:
+ *    - 通过create函数创建新的设备密钥记录
+ *    - 使用get函数检索现有设备密钥
+ *    - 通过update函数更新设备密钥信息
+ *    - 使用delete函数删除不再需要的设备密钥
+ *
+ * 注意事项
+ * ========
+ * - 安全性: 设备密钥是高度敏感的安全信息，需要妥善保护
+ * - 数据一致性: 使用数据库事务确保DevNonce和JoinNonce的一致性
+ * - 性能考虑: 设备激活过程中的密钥操作是性能关键路径
+ * - 错误处理: 适当处理数据库连接和查询过程中的错误
+ * - 测试支持: 包含测试模块，用于验证设备密钥管理功能
+ */
+
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;

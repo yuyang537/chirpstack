@@ -7,6 +7,7 @@
     "lrwn-filters",
     "backend",
     "api/rust",
+    "klee-chirpstack",
   ]
 
 [profile.release]

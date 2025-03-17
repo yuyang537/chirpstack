@@ -1,3 +1,33 @@
+/**
+ * @module schema_sqlite
+ * 
+ * @description
+ * 
+ * # 模块概述
+ * 本文件定义了ChirpStack系统在SQLite数据库中的表结构和关系。这是由Diesel CLI自动生成的架构定义，
+ * 用于支持Diesel ORM与SQLite数据库的交互，主要用于开发和测试环境。
+ * 
+ * # 文件功能
+ * - 定义所有SQLite数据库表的结构，包括字段名称、类型和约束
+ * - 声明表之间的关系和外键约束
+ * - 配置表的连接规则，支持复杂查询
+ * - 提供与PostgreSQL兼容的表结构，但针对SQLite进行了优化
+ * 
+ * # 主要组件
+ * - 用户管理表：user, tenant_user, api_key
+ * - 设备管理表：device, device_profile, device_keys, device_queue_item
+ * - 应用管理表：application, application_integration
+ * - 网关管理表：gateway
+ * - 多播组表：multicast_group及相关表
+ * - 中继设备表：relay_device, relay_gateway
+ * 
+ * # 重要考虑事项
+ * - 此文件由Diesel CLI自动生成，不应手动修改
+ * - 表结构变更应通过迁移脚本实现，然后重新生成此文件
+ * - SQLite版本主要用于开发和测试，生产环境推荐使用PostgreSQL
+ * - 某些PostgreSQL特有的功能在SQLite中可能有不同的实现方式
+ */
+
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
