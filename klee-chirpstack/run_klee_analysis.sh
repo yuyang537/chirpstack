@@ -1,26 +1,38 @@
 #!/bin/bash
-# 运行KLEE符号执行分析的脚本
+# 运行KLEE符号执行分析的脚本（适用于KLEE Docker环境）
 
 set -e
 
-# 检查KLEE是否已安装
-if ! command -v klee &> /dev/null; then
-    echo "错误: KLEE未安装。请先安装KLEE。"
-    exit 1
+echo "在KLEE Docker环境中运行分析..."
+
+# 安装必要的依赖
+echo "安装必要的依赖..."
+apt-get update || true
+apt-get install -y curl build-essential llvm llvm-dev clang || true
+
+# 安装Rust（如果尚未安装）
+if ! command -v cargo &> /dev/null; then
+    echo "安装Rust..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    source $HOME/.cargo/env
+    
+    # 添加到.bashrc以便下次使用
+    echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 fi
 
-# 检查LLVM工具链是否已安装
-if ! rustup component list --installed | grep -q "llvm-tools"; then
-    echo "安装LLVM工具链..."
-    rustup component add llvm-tools-preview
-fi
+# 设置Rust环境变量
+export PATH="$HOME/.cargo/bin:$PATH"
+
+# 安装LLVM工具链
+echo "安装LLVM工具链..."
+$HOME/.cargo/bin/rustup component add llvm-tools-preview
 
 # 进入ChirpStack目录
 cd ..
 
 # 编译ChirpStack为LLVM位码
 echo "编译ChirpStack为LLVM位码..."
-RUSTFLAGS="-Ccodegen-units=1 -Clink-arg=-Wl,--export-dynamic" cargo rustc --bin chirpstack --features klee --release -- --emit=llvm-bc
+RUSTFLAGS="-Ccodegen-units=1 -Clink-arg=-Wl,--export-dynamic" $HOME/.cargo/bin/cargo rustc --bin chirpstack --features klee --release -- --emit=llvm-bc
 
 # 查找生成的位码文件
 BITCODE_FILE=$(find target/release/deps -name "chirpstack-*.bc" | head -n 1)
