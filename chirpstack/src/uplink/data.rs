@@ -480,8 +480,7 @@ impl Data {
 
         self.device_gateway_rx_info = Some(internal::DeviceGatewayRxInfo {
             dev_eui: d.dev_eui.to_vec(),
-            dr: self.uplink_frame_set.dr as u32,
-            items: self
+            dr: self
                 .uplink_frame_set
                 .rx_info_set
                 .iter()
@@ -1520,10 +1519,10 @@ pub async fn analyze_uplink_data_with_klee(
             b"symbolic_f_port\0".as_ptr() as *const libc::c_char,
         );
         
-        // 添加约束
-        klee_assume(symbolic_payload_len <= 256);
-        klee_assume(symbolic_payload_len > 0);
-        klee_assume(symbolic_f_port <= 223); // 有效的FPort范围
+        // 添加约束：payload长度不能超过256字节，FPort范围合法
+        klee_assume((symbolic_payload_len <= 256) as i32);
+        klee_assume((symbolic_payload_len > 0) as i32);
+        klee_assume((symbolic_f_port <= 223) as i32); // 有效的FPort范围
     }
     
     // 创建上行数据消息
@@ -1537,7 +1536,7 @@ pub async fn analyze_uplink_data_with_klee(
                 devaddr: dev_addr,
                 f_ctrl: FCtrl::default(),
                 f_cnt: symbolic_f_cnt,
-                f_opts: Default::default(),
+                f_opts: lrwn::MACCommandSet::new(vec![]),
             },
             f_port: Some(symbolic_f_port),
             frm_payload: Some(FRMPayload::Raw(symbolic_payload[..symbolic_payload_len].to_vec())),
@@ -1680,12 +1679,10 @@ pub async fn analyze_uplink_data_with_klee(
             vec![]
         };
         
-        // 断言：解密后的数据应该与原始负载相同
-        if decrypted_data.len() == original_payload.len() {
-            for i in 0..original_payload.len() {
-                unsafe {
-                    klee_assert(decrypted_data[i] == original_payload[i] as i32);
-                }
+        // 断言：解密后的数据应该与原始数据相同
+        for i in 0..decrypted_data.len() {
+            unsafe {
+                klee_assert((decrypted_data[i] == original_payload[i]) as i32);
             }
         }
     }
@@ -1704,9 +1701,7 @@ pub async fn analyze_uplink_data_with_klee(
                     devaddr: dev_addr,
                     f_ctrl: FCtrl::default(),
                     f_cnt: symbolic_f_cnt,
-                    f_opts: lrwn::MACCommandSet::new(vec![
-                        lrwn::MACCommand::LinkCheckReq,
-                    ]),
+                    f_opts: lrwn::MACCommandSet::new(vec![]),
                 },
                 f_port: Some(symbolic_f_port),
                 frm_payload: Some(FRMPayload::Raw(symbolic_payload[..symbolic_payload_len].to_vec())),
@@ -1741,11 +1736,11 @@ pub async fn analyze_uplink_data_with_klee(
             vec![]
         };
         
-        // 断言：解密后的FOpts应该与原始FOpts相同
+        // 检查FOpts加密和解密
         if decrypted_fopts.len() == original_fopts.len() {
             for i in 0..original_fopts.len() {
                 unsafe {
-                    klee_assert(decrypted_fopts[i] == original_fopts[i] as i32);
+                    klee_assert((decrypted_fopts[i] == original_fopts[i]) as i32);
                 }
             }
         }

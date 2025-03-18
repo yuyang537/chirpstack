@@ -144,7 +144,7 @@ async fn main() -> Result<()> {
     #[cfg(feature = "klee")]
     {
         // 如果启用了KLEE特性，则运行符号执行
-        run_klee_symbolic_execution().await
+        run_klee_symbolic_execution().await?;
     }
     #[cfg(not(feature = "klee"))]
     {
@@ -248,10 +248,8 @@ async fn run_klee_symbolic_execution() -> Result<()> {
         );
         
         // 添加约束：payload长度不能超过256字节
-        unsafe {
-            klee_assume((symbolic_payload_len <= 256) as i32);
-            klee_assume((symbolic_payload_len > 0) as i32);
-        }
+        klee_assume((symbolic_payload_len <= 256) as i32);
+        klee_assume((symbolic_payload_len > 0) as i32);
     }
     
     // 转换为ChirpStack使用的类型
@@ -396,7 +394,7 @@ async fn analyze_security_sensitive_operations(
         if decrypted_data.len() == payload.len() {
             for i in 0..payload.len() {
                 unsafe {
-                    klee_assert(decrypted_data[i] == payload[i] as i32);
+                    klee_assert((decrypted_data[i] == payload[i]) as i32);
                 }
             }
         }

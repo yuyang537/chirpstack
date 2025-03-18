@@ -1021,8 +1021,8 @@ impl JoinRequest {
 #[cfg(feature = "klee")]
 pub async fn analyze_join_request_with_klee(
     dev_eui: lrwn::EUI64,
-    _app_key: lrwn::AES128Key,
-    _nwk_key: lrwn::AES128Key,
+    app_key: lrwn::AES128Key,
+    nwk_key: lrwn::AES128Key,
 ) -> Result<(), anyhow::Error> {
     use anyhow::Context;
     use chrono::Utc;
@@ -1173,8 +1173,8 @@ pub async fn analyze_join_request_with_klee(
         unsafe {
             // 验证密钥生成的正确性
             for i in 0..16 {
-                klee_assert(f_nwk_s_int_key.to_bytes()[i] == s_nwk_s_int_key.to_bytes()[i]);
-                klee_assert(f_nwk_s_int_key.to_bytes()[i] == nwk_s_enc_key.to_bytes()[i]);
+                klee_assert((f_nwk_s_int_key.to_bytes()[i] == s_nwk_s_int_key.to_bytes()[i]) as i32);
+                klee_assert((f_nwk_s_int_key.to_bytes()[i] == nwk_s_enc_key.to_bytes()[i]) as i32);
             }
         }
     }

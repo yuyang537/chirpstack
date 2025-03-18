@@ -163,7 +163,7 @@ struct Asset;
 
 impl Asset {
     pub fn get(path: &str) -> Option<Vec<u8>> {
-        Self::get(path).map(|v| v.to_vec())
+        <Self as RustEmbed>::get(path).map(|v| v.data.to_vec())
     }
 }
 
