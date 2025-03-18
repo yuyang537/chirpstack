@@ -50,11 +50,12 @@
 
 use std::fmt;
 use std::str::FromStr;
+use std::str::ParseError;
 
 use diesel::backend::Backend;
-use diesel::{deserialize, serialize};
-#[cfg(feature = "postgres")]
-use diesel::{pg::Pg, sql_types::Uuid as PgUuid};
+use diesel::deserialize;
+use diesel::serialize;
+use diesel::{pg::Pg, sql_types::Uuid};
 #[cfg(feature = "sqlite")]
 use diesel::{sql_types::Text, sqlite::Sqlite};
 use serde::{Deserialize, Serialize};

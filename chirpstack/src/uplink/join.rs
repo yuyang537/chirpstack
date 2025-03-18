@@ -51,7 +51,7 @@ use std::sync::Arc;
 
 // KLEE符号执行支持
 #[cfg(feature = "klee")]
-use klee_sys::{klee_assume, klee_assert, klee_make_symbolic};
+use klee_sys::{klee_assert, klee_make_symbolic};
 #[cfg(feature = "klee")]
 use std::mem::size_of;
 
@@ -1025,9 +1025,8 @@ pub async fn analyze_join_request_with_klee(
     nwk_key: lrwn::AES128Key,
 ) -> Result<(), anyhow::Error> {
     use anyhow::Context;
-    use chrono::Utc;
-    use lrwn::{JoinRequestPayload, JoinType, MType, Major, MHDR, PhyPayload, Payload};
-    use tracing::{info, error};
+    use lrwn::{JoinRequestPayload, MType, Major, MHDR, PhyPayload, Payload};
+    use tracing::info;
     
     info!("使用KLEE分析Join Request处理流程");
     
