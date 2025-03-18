@@ -144,52 +144,54 @@ async fn main() -> Result<()> {
     #[cfg(feature = "klee")]
     {
         // 如果启用了KLEE特性，则运行符号执行
-        return run_klee_symbolic_execution().await;
+        run_klee_symbolic_execution().await
     }
+    #[cfg(not(feature = "klee"))]
+    {
+        let cli = Cli::parse();
+        config::load(Path::new(&cli.config))?;
 
-    let cli = Cli::parse();
-    config::load(Path::new(&cli.config))?;
+        let conf = config::get();
+        let filter = filter::Targets::new().with_targets(vec![
+            ("chirpstack", Level::from_str(&conf.logging.level).unwrap()),
+            ("backend", Level::from_str(&conf.logging.level).unwrap()),
+            ("lrwn", Level::from_str(&conf.logging.level).unwrap()),
+        ]);
 
-    let conf = config::get();
-    let filter = filter::Targets::new().with_targets(vec![
-        ("chirpstack", Level::from_str(&conf.logging.level).unwrap()),
-        ("backend", Level::from_str(&conf.logging.level).unwrap()),
-        ("lrwn", Level::from_str(&conf.logging.level).unwrap()),
-    ]);
-
-    if conf.logging.json {
-        tracing_subscriber::registry()
-            .with(tracing_subscriber::fmt::layer().json())
-            .with(filter)
-            .init();
-    } else {
-        tracing_subscriber::registry()
-            .with(tracing_subscriber::fmt::layer())
-            .with(filter)
-            .init();
-    }
-
-    match &cli.command {
-        Some(Commands::Configfile {}) => cmd::configfile::run(),
-        Some(Commands::PrintDs { dev_eui }) => {
-            let dev_eui = EUI64::from_str(dev_eui).unwrap();
-            cmd::print_ds::run(&dev_eui).await.unwrap();
+        if conf.logging.json {
+            tracing_subscriber::registry()
+                .with(tracing_subscriber::fmt::layer().json())
+                .with(filter)
+                .init();
+        } else {
+            tracing_subscriber::registry()
+                .with(tracing_subscriber::fmt::layer())
+                .with(filter)
+                .init();
         }
-        Some(Commands::ImportLorawanDeviceProfiles { dir }) => {
-            cmd::import_lorawan_device_profiles::run(Path::new(&dir))
-                .await
-                .unwrap()
+
+        match &cli.command {
+            Some(Commands::Configfile {}) => cmd::configfile::run(),
+            Some(Commands::PrintDs { dev_eui }) => {
+                let dev_eui = EUI64::from_str(dev_eui).unwrap();
+                cmd::print_ds::run(&dev_eui).await.unwrap();
+            }
+            Some(Commands::ImportLorawanDeviceProfiles { dir }) => {
+                cmd::import_lorawan_device_profiles::run(Path::new(&dir))
+                    .await
+                    .unwrap()
+            }
+            Some(Commands::ImportLegacyLorawanDevicesRepository { dir }) => {
+                cmd::import_legacy_lorawan_devices_repository::run(Path::new(&dir))
+                    .await
+                    .unwrap()
+            }
+            Some(Commands::CreateApiKey { name }) => cmd::create_api_key::run(name).await?,
+            Some(Commands::MigrateDeviceSessionsToPostgres {}) => cmd::migrate_ds_to_pg::run().await?,
+            #[cfg(feature = "klee")]
+            Some(Commands::KleeSymbolicExecution {}) => run_klee_symbolic_execution().await?,
+            None => cmd::root::run().await?,
         }
-        Some(Commands::ImportLegacyLorawanDevicesRepository { dir }) => {
-            cmd::import_legacy_lorawan_devices_repository::run(Path::new(&dir))
-                .await
-                .unwrap()
-        }
-        Some(Commands::CreateApiKey { name }) => cmd::create_api_key::run(name).await?,
-        Some(Commands::MigrateDeviceSessionsToPostgres {}) => cmd::migrate_ds_to_pg::run().await?,
-        #[cfg(feature = "klee")]
-        Some(Commands::KleeSymbolicExecution {}) => run_klee_symbolic_execution().await?,
-        None => cmd::root::run().await?,
     }
 
     Ok(())
@@ -246,8 +248,10 @@ async fn run_klee_symbolic_execution() -> Result<()> {
         );
         
         // 添加约束：payload长度不能超过256字节
-        klee_assume(symbolic_payload_len <= 256);
-        klee_assume(symbolic_payload_len > 0);
+        unsafe {
+            klee_assume((symbolic_payload_len <= 256) as i32);
+            klee_assume((symbolic_payload_len > 0) as i32);
+        }
     }
     
     // 转换为ChirpStack使用的类型
@@ -295,7 +299,7 @@ async fn analyze_security_sensitive_operations(
                 devaddr: DevAddr::from_be_bytes([1, 2, 3, 4]),
                 f_ctrl: FCtrl::default(),
                 f_cnt: 0,
-                f_opts: Default::default(),
+                f_opts: lrwn::MACCommandSet::new(vec![]),
             },
             f_port: Some(1),
             frm_payload: Some(lrwn::FRMPayload::Raw(payload.to_vec())),

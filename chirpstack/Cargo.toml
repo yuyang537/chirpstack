@@ -195,7 +195,8 @@
   test-integration-mqtt = []
   
   # KLEE符号执行特性
-  klee = ["klee-sys", "libc", "lrwn/crypto"]
+  klee = ["klee-sys", "libc", "lrwn/crypto", "crypto"]
+  crypto = ["lrwn/crypto"]
 
   # Debian packaging.
   [package.metadata.deb]

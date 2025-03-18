@@ -1021,8 +1021,8 @@ impl JoinRequest {
 #[cfg(feature = "klee")]
 pub async fn analyze_join_request_with_klee(
     dev_eui: lrwn::EUI64,
-    app_key: lrwn::AES128Key,
-    nwk_key: lrwn::AES128Key,
+    _app_key: lrwn::AES128Key,
+    _nwk_key: lrwn::AES128Key,
 ) -> Result<(), anyhow::Error> {
     use anyhow::Context;
     use chrono::Utc;

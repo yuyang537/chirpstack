@@ -66,7 +66,7 @@ use chirpstack_api::{common, gw, stream as stream_pb};
 use lrwn::region::CommonName;
 use lrwn::{ForwardUplinkReq, MType, PhyPayload, EUI64};
 
-mod data;
+pub mod data;
 mod data_fns;
 pub mod data_sns;
 pub mod error;

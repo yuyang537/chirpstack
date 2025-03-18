@@ -161,6 +161,12 @@ lazy_static! {
 #[folder = "../ui/build"]
 struct Asset;
 
+impl Asset {
+    pub fn get(path: &str) -> Option<Vec<u8>> {
+        Self::get(path).map(|v| v.to_vec())
+    }
+}
+
 type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
 pub async fn setup() -> Result<()> {
