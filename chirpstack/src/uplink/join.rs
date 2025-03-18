@@ -1160,7 +1160,7 @@ pub async fn analyze_join_request_with_klee(
             dev_nonce,
         )?;
         
-        let app_s_key = lrwn::keys::get_app_s_key(
+        let _app_s_key = lrwn::keys::get_app_s_key(
             false, // LoRaWAN 1.0
             &app_key,
             &net_id,

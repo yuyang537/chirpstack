@@ -475,12 +475,13 @@ impl Data {
     }
 
     fn set_device_gateway_rx_info(&mut self) -> Result<()> {
-        trace!("Setting gateway rx-info for device");
+        trace!("Setting device gateway rx-info");
         let d = self.device.as_ref().unwrap();
 
         self.device_gateway_rx_info = Some(internal::DeviceGatewayRxInfo {
             dev_eui: d.dev_eui.to_vec(),
-            dr: self
+            dr: self.uplink_frame_set.dr as u32,
+            items: self
                 .uplink_frame_set
                 .rx_info_set
                 .iter()
@@ -1473,7 +1474,7 @@ impl Data {
 // 添加符号执行分析函数
 #[cfg(feature = "klee")]
 pub async fn analyze_uplink_data_with_klee(
-    dev_eui: lrwn::EUI64,
+    _dev_eui: lrwn::EUI64,
     dev_addr: lrwn::DevAddr,
     f_nwk_s_int_key: lrwn::AES128Key,
     s_nwk_s_int_key: lrwn::AES128Key,
@@ -1727,13 +1728,17 @@ pub async fn analyze_uplink_data_with_klee(
         };
         
         // 解密FOpts
-        phy_with_fopts.decrypt_f_opts(&nwk_s_enc_key)?;
-        
-        // 获取解密后的FOpts
-        let decrypted_fopts = if let Payload::MACPayload(ref pl) = phy_with_fopts.payload {
-            pl.fhdr.f_opts.to_vec()?
-        } else {
-            vec![]
+        let mut decrypted_fopts = vec![];
+        let _encrypted_fopts = if let Payload::MACPayload(ref pl) = phy_with_fopts.payload {
+            if !pl.fhdr.f_opts.to_vec()?.is_empty() {
+                // FOpts有内容，需要解密
+                decrypted_fopts = encryption::decrypt_fopts(
+                    &nwk_s_enc_key,
+                    &dev_addr,
+                    symbolic_f_cnt,
+                    &pl.fhdr.f_opts.to_vec()?,
+                )?;
+            }
         };
         
         // 检查FOpts加密和解密

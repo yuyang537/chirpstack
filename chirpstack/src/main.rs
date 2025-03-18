@@ -53,8 +53,7 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use tracing::Level;
-use tracing_subscriber::{filter, prelude::*};
+use tracing_subscriber::filter;
 
 use lrwn::EUI64;
 
@@ -406,9 +405,11 @@ async fn analyze_security_sensitive_operations(
         if let LrwnPayload::MACPayload(ref mut pl) = phy.payload {
             // 设置一个较大的帧计数器值
             pl.fhdr.f_cnt = 100;
-            
-            // 设置MIC
-            #[cfg(feature = "crypto")]
+        }
+        
+        // 设置MIC
+        #[cfg(feature = "crypto")]
+        {
             phy.set_uplink_data_mic(
                 MACVersion::LoRaWAN1_0,
                 0,
@@ -419,7 +420,6 @@ async fn analyze_security_sensitive_operations(
             )?;
             
             // 验证MIC
-            #[cfg(feature = "crypto")]
             let mic_valid = phy.validate_uplink_data_mic(
                 MACVersion::LoRaWAN1_0,
                 0,
@@ -429,16 +429,19 @@ async fn analyze_security_sensitive_operations(
                 &nwk_key,
             )?;
             
-            #[cfg(feature = "crypto")]
             unsafe {
                 klee_assert(mic_valid as i32);
             }
-            
-            // 现在尝试回滚帧计数器
+        }
+        
+        // 现在尝试回滚帧计数器
+        if let LrwnPayload::MACPayload(ref mut pl) = phy.payload {
             pl.fhdr.f_cnt = 50;
-            
-            // 重新设置MIC以使其有效
-            #[cfg(feature = "crypto")]
+        }
+        
+        // 重新设置MIC以使其有效
+        #[cfg(feature = "crypto")]
+        {
             phy.set_uplink_data_mic(
                 MACVersion::LoRaWAN1_0,
                 0,
@@ -447,10 +450,10 @@ async fn analyze_security_sensitive_operations(
                 &nwk_key,
                 &nwk_key,
             )?;
-            
-            // 这里我们不做断言，因为ChirpStack的帧计数器检查是在设备会话层面进行的
-            // 在实际的设备会话处理中，应该会拒绝这种回滚的帧计数器
         }
+        
+        // 这里我们不做断言，因为ChirpStack的帧计数器检查是在设备会话层面进行的
+        // 在实际的设备会话处理中，应该会拒绝这种回滚的帧计数器
     }
     
     // 4. 调用uplink/join.rs中的分析函数

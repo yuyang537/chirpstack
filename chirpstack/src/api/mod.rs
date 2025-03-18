@@ -163,7 +163,7 @@ struct Asset;
 
 impl Asset {
     pub fn get(path: &str) -> Option<Vec<u8>> {
-        <Self as RustEmbed>::get(path).map(|v| v.data.to_vec())
+        <Asset as rust_embed::RustEmbed>::get(path).map(|d| d.data.to_vec())
     }
 }
 
@@ -278,7 +278,7 @@ async fn service_static_handler(uri: Uri) -> impl IntoResponse {
             header::CONTENT_TYPE,
             HeaderValue::from_str(mime.as_ref()).unwrap(),
         );
-        (StatusCode::OK, headers, asset.data.into())
+        (StatusCode::OK, headers, asset)
     } else {
         (StatusCode::NOT_FOUND, HeaderMap::new(), vec![])
     }
