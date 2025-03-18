@@ -617,8 +617,9 @@ impl JoinRequest {
                     join_req_pl.base.transaction_id,
                     js_client.get_async_timeout(),
                 )
-                .await?,
-        });
+                .await?
+            ),
+        };
 
         let join_ans_pl = js_client
             .join_req(jr.join_eui.to_vec(), &mut join_req_pl, async_receiver)

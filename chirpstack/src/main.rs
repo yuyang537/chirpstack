@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 /**
  * @module main
  * 
@@ -37,7 +39,6 @@
  */
 
 // Required by rust::table macro.
-#![recursion_limit = "256"]
 
 #[macro_use]
 extern crate lazy_static;

@@ -158,8 +158,8 @@
   signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
   
   # KLEE符号执行支持
-  klee-sys = { path = "../klee-chirpstack", optional = true}
-  libc = { version = "0.2", optional = true}
+  klee-sys = { path = "../klee-chirpstack", optional = true }
+  libc = { version = "0.2", optional = true }
 
 # Development and testing
 [dev-dependencies]
