@@ -80,7 +80,7 @@ use prometheus_client::encoding::EncodeLabelSet;
 use prometheus_client::metrics::counter::Counter;
 use prometheus_client::metrics::family::Family;
 use prometheus_client::metrics::histogram::Histogram;
-use rust_embed::RustEmbed;
+use rust_embed::{RustEmbed, Embed};
 use tokio::task;
 use tokio::try_join;
 use tonic::transport::Server as TonicServer;
@@ -163,6 +163,11 @@ struct Asset;
 
 impl Asset {
     pub fn get(path: &str) -> Option<Vec<u8>> {
+        // Temporary workaround for missing UI build directory
+        if path == "index.html" {
+            return Some(b"<!DOCTYPE html><html><body><h1>ChirpStack Placeholder</h1></body></html>".to_vec());
+        }
+        
         <Asset as rust_embed::RustEmbed>::get(path).map(|d| d.data.to_vec())
     }
 }
