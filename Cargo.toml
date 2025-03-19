@@ -1,15 +1,14 @@
 [workspace]
   resolver = "2"
   members = [
-    "api",
+    "api/rust",
     "backend",
     "chirpstack",
     "chirpstack-integration",
     "lrwn",
     "lrwn-filters",
-    "backend",
-    "api/rust",
     "klee-chirpstack",
+    "klee-chirpstack/klee-sys",
   ]
 
 [profile.release]
