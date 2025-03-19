@@ -365,7 +365,7 @@ async fn analyze_security_sensitive_operations(
         phy.encrypt_frm_payload(&app_key)?;
         
         // 保存加密后的数据
-        let encrypted_data = if let LrwnPayload::MACPayload(ref pl) = phy.payload {
+        let _encrypted_data = if let LrwnPayload::MACPayload(ref pl) = phy.payload {
             if let Some(ref frm_payload) = pl.frm_payload {
                 frm_payload.to_vec()?
             } else {

@@ -80,7 +80,7 @@ use prometheus_client::encoding::EncodeLabelSet;
 use prometheus_client::metrics::counter::Counter;
 use prometheus_client::metrics::family::Family;
 use prometheus_client::metrics::histogram::Histogram;
-use rust_embed::{RustEmbed, Embed};
+use rust_embed::RustEmbed;
 use tokio::task;
 use tokio::try_join;
 use tonic::transport::Server as TonicServer;
@@ -162,7 +162,7 @@ lazy_static! {
 struct Asset;
 
 impl Asset {
-    pub fn get(path: &str) -> Option<Vec<u8>> {
+    pub fn get_asset(path: &str) -> Option<Vec<u8>> {
         // Temporary workaround for missing UI build directory
         if path == "index.html" {
             return Some(b"<!DOCTYPE html><html><body><h1>ChirpStack Placeholder</h1></body></html>".to_vec());
@@ -276,7 +276,7 @@ async fn service_static_handler(uri: Uri) -> impl IntoResponse {
         path = "index.html";
     }
 
-    if let Some(asset) = Asset::get(path) {
+    if let Some(asset) = Asset::get_asset(path) {
         let mime = mime_guess::from_path(path).first_or_octet_stream();
         let mut headers = HeaderMap::new();
         headers.insert(

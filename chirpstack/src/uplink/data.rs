@@ -1732,7 +1732,7 @@ pub async fn analyze_uplink_data_with_klee(
         let _encrypted_fopts = if let Payload::MACPayload(ref pl) = phy.payload {
             if !pl.fhdr.f_opts.to_vec()?.is_empty() {
                 // FOpts有内容，需要解密
-                decrypted_fopts = lrwn::encryption::decrypt_fopts(
+                decrypted_fopts = lrwn::crypto::decrypt_fopts(
                     &nwk_s_enc_key,
                     &dev_addr,
                     symbolic_f_cnt,
