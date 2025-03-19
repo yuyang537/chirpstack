@@ -175,11 +175,13 @@ impl serialize::ToSql<Binary, Sqlite> for AES128Key {
 #[cfg(feature = "klee_analysis")]
 pub mod klee_support {
     use super::*;
+    use std::os::raw::{c_void, c_char};
     
+    // 直接定义KLEE外部函数，而不使用klee-sys
     extern "C" {
-        fn klee_make_symbolic(addr: *mut c_void, size: usize, name: *const u8);
-        fn klee_assume(condition: bool);
-        fn klee_assert(condition: bool);
+        pub fn klee_make_symbolic(addr: *mut c_void, size: usize, name: *const c_char);
+        pub fn klee_assume(condition: bool);
+        pub fn klee_assert(condition: bool);
     }
     
     pub fn make_symbolic_key(name: &str) -> AES128Key {

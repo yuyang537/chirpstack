@@ -10,14 +10,14 @@
 
 extern crate lrwn;
 
-use std::os::raw::c_void;
+use std::os::raw::{c_void, c_char};
 
 // 定义KLEE外部函数
 extern "C" {
-    fn klee_make_symbolic(addr: *mut c_void, size: usize, name: *const u8);
+    fn klee_make_symbolic(addr: *mut c_void, size: usize, name: *const c_char);
     fn klee_assume(condition: u8);
     fn klee_assert(condition: u8);
-    fn klee_report_error(file: *const u8, line: u32, message: *const u8, suffix: *const u8);
+    fn klee_report_error(file: *const c_char, line: u32, message: *const c_char, suffix: *const c_char);
 }
 
 // 封装KLEE函数，以便在Rust中使用
