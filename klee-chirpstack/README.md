@@ -1,120 +1,142 @@
-# ChirpStack KLEE符号执行分析
+# ChirpStack模块化KLEE分析
 
-本项目使用KLEE符号执行工具对ChirpStack LoRaWAN网络服务器进行安全分析。
+本项目提供了一个框架，用于对ChirpStack的各个模块进行KLEE符号执行分析，帮助检测内存错误、逻辑漏洞和协议合规性问题。
 
-## 概述
+## 目录结构
 
-KLEE是一个符号执行工具，可以自动生成高覆盖率的测试用例，并发现程序中的错误。在本项目中，我们使用KLEE对ChirpStack的关键安全组件进行分析，包括：
-
-- 消息完整性码(MIC)验证
-- 加密密钥生成和管理
-- 帧计数器(FCnt)验证
-- 数据包加密和解密
-- 设备认证和授权
-
-## 安装KLEE
-
-要使用KLEE，您需要先安装KLEE及其依赖项。以下是在Ubuntu系统上安装KLEE的步骤：
-
-1. 安装依赖项：
-
-```bash
-sudo apt-get update
-sudo apt-get install build-essential curl libcap-dev git cmake libncurses5-dev python-minimal python-pip unzip libtcmalloc-minimal4 libgoogle-perftools-dev libsqlite3-dev doxygen
+```
+klee-chirpstack/
+├── aes128_driver.c          # AES128模块的C驱动
+├── build_and_run.sh         # C驱动构建和执行脚本
+├── klee_entry.rs            # 纯Rust的KLEE分析入口点
+├── build_and_run_rust.sh    # Rust驱动构建和执行脚本
+├── module_template.c        # 新C模块分析的模板
+└── README.md                # 本说明文件
 ```
 
-2. 安装LLVM和Clang：
+## 前提条件
+
+- LLVM/Clang (推荐11.0+)
+- KLEE 符号执行引擎
+- Rust (nightly版本推荐)
+- cargo-klee (可选)
+
+## 使用方法
+
+### 1. 分析AES128模块 (C驱动)
+
+这种方式使用C语言驱动，通过FFI调用Rust函数：
 
 ```bash
-sudo apt-get install llvm-11 llvm-11-dev llvm-11-tools clang-11
+chmod +x build_and_run.sh
+./build_and_run.sh
 ```
 
-3. 克隆KLEE仓库：
+运行后，分析结果将保存在`aes128/reports/`目录中。
+
+### 2. 分析AES128模块 (纯Rust)
+
+这种方式直接在Rust中进行符号执行，无需通过C FFI：
 
 ```bash
-git clone https://github.com/klee/klee.git
-cd klee
+chmod +x build_and_run_rust.sh
+./build_and_run_rust.sh
 ```
 
-4. 构建KLEE：
+运行后，分析结果将保存在`aes128_rust/reports/`目录中。
+
+### 3. 分析其他模块
+
+#### 使用C驱动
+
+1. 复制并修改C模板文件：
 
 ```bash
-mkdir build
-cd build
-cmake -DENABLE_SOLVER_STP=ON -DENABLE_POSIX_RUNTIME=ON -DENABLE_KLEE_UCLIBC=ON -DKLEE_UCLIBC_PATH=../klee-uclibc -DLLVM_CONFIG_BINARY=/usr/bin/llvm-config-11 -DLLVMCC=/usr/bin/clang-11 -DLLVMCXX=/usr/bin/clang++-11 ..
-make -j$(nproc)
-sudo make install
+cp module_template.c new_module_driver.c
 ```
 
-## 编译ChirpStack以支持KLEE
-
-要使用KLEE分析ChirpStack，需要将ChirpStack编译为LLVM位码：
-
-1. 安装Rust：
+2. 修改Rust源文件，添加必要的KLEE支持代码和FFI导出函数
+3. 复制并修改构建脚本：
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source $HOME/.cargo/env
+cp build_and_run.sh build_new_module.sh
 ```
 
-2. 安装LLVM工具链：
+4. 调整新脚本中的模块路径和分析参数
+5. 运行新脚本
+
+#### 使用纯Rust
+
+1. 创建新的Rust入口文件，参考`klee_entry.rs`的结构
+2. 修改入口文件中的测试案例
+3. 复制并修改Rust构建脚本：
 
 ```bash
-rustup component add llvm-tools-preview
+cp build_and_run_rust.sh build_new_module_rust.sh
 ```
 
-3. 编译ChirpStack为LLVM位码：
+4. 调整新脚本中的模块路径和分析参数
+5. 运行新脚本
 
-```bash
-cd chirpstack
-RUSTFLAGS="-Ccodegen-units=1 -Clink-arg=-Wl,--export-dynamic" cargo rustc --bin chirpstack --features klee --release -- --emit=llvm-bc
-```
+## C驱动 vs 纯Rust分析
 
-这将在`target/release/deps/`目录下生成LLVM位码文件（`.bc`文件）。
+两种方法的对比：
 
-## 运行KLEE分析
+| 特性              | C驱动           | 纯Rust          |
+|-------------------|----------------|-----------------|
+| 实现复杂度        | 较高            | 较低            |
+| 分析准确性        | 可能有FFI问题    | 更准确          |
+| 性能              | 有FFI开销       | 无FFI开销       |
+| 支持范围          | 所有公开函数    | 所有功能        |
+| 调试难度          | 较难            | 较容易          |
 
-使用以下命令运行KLEE分析：
+一般建议：
+- 对于简单模块，使用纯Rust分析
+- 对于涉及C互操作的模块，使用C驱动更接近真实场景
 
-```bash
-klee --libc=uclibc --posix-runtime target/release/deps/chirpstack-*.bc --config ./configuration --command KleeSymbolicExecution
-```
+## 解释KLEE结果
 
-KLEE将执行符号分析，并在`klee-out-*`目录中生成测试用例和错误报告。
+KLEE分析会生成以下结果：
 
-## 分析KLEE结果
+- **测试用例 (.ktest)**: 可以使用`ktest-tool`查看
+- **错误报告 (.err)**: 包含检测到的错误详情
+- **统计信息**: 包含代码覆盖率、分析时间等
+- **错误摘要**: 汇总所有错误，按严重程度分类
 
-KLEE生成的结果包括：
+## 常见问题解决
 
-1. 测试用例（`klee-out-*/test*.ktest`）：这些是KLEE发现的可能执行路径的具体输入值。
-2. 错误报告（`klee-out-*/test*.err`）：这些是KLEE发现的潜在错误，如断言失败、内存错误等。
+### 路径爆炸问题
 
-您可以使用KLEE提供的工具分析这些结果：
+如果遇到路径爆炸，可以尝试：
 
-```bash
-# 查看测试用例
-ktest-tool klee-out-*/test000001.ktest
+1. 减小符号输入的大小
+2. 增加约束条件
+3. 使用`--max-forks=N`限制路径分叉数量
+4. 尝试不同的搜索策略 (DFS, BFS, Random-Path等)
 
-# 生成覆盖率报告
-klee-stats klee-out-*/
-```
+### 编译错误
 
-## 安全分析重点
+确保：
 
-在ChirpStack中，我们重点关注以下安全敏感操作：
+1. Rust模块中的`klee_analysis`特性已正确配置
+2. FFI导出函数正确声明(#[no_mangle])
+3. KLEE包含路径正确设置
 
-1. **MIC验证**：确保消息完整性码验证正确实现，防止消息篡改。
-2. **加密操作**：验证加密和解密操作的正确性，确保数据机密性。
-3. **帧计数器验证**：检查帧计数器验证逻辑，防止重放攻击。
-4. **密钥生成**：分析会话密钥生成过程，确保密钥安全性。
-5. **设备认证**：验证设备认证过程，防止未授权访问。
+### Rust链接问题
 
-## 已添加的符号执行分析
+如遇到Rust链接问题：
 
-我们已经在ChirpStack代码中添加了以下符号执行分析：
+1. 检查Cargo.toml中的依赖路径是否正确
+2. 确保已编译lrwn库并生成rlib文件
+3. 使用`-L`和`--extern`参数显式指定库的路径
 
-1. `main.rs`中的`analyze_security_sensitive_operations`函数：分析基本的安全敏感操作。
-2. `uplink/join.rs`中的`analyze_join_request_with_klee`函数：分析Join Request处理流程。
-3. `uplink/data.rs`中的`analyze_uplink_data_with_klee`函数：分析上行数据处理流程。
+## 添加新模块的最佳实践
 
-这些分析函数使用KLEE符号执行来探索不同的执行路径，并验证安全属性。 
+1. 从小且独立的模块开始
+2. 优先分析安全关键模块
+3. 先实现简单的属性测试，再逐步添加复杂测试
+4. 保持C驱动和Rust代码的同步
+
+## 贡献
+
+欢迎贡献更多模块的分析驱动和改进现有框架。 
