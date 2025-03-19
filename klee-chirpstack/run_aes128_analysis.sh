@@ -5,11 +5,23 @@ set -e
 LLVM_BIN="/usr/lib/llvm-14/bin"
 KLEE_INCLUDE="/usr/local/include"
 
+# 检查是否可以找到KLEE头文件，如果找不到则使用我们自己的包装文件
+if [ -f "$KLEE_INCLUDE/klee/klee.h" ]; then
+  INCLUDE_PATH="-I $KLEE_INCLUDE"
+  echo "使用系统KLEE头文件"
+else
+  INCLUDE_PATH="-I ."
+  echo "使用自定义KLEE包装头文件"
+  # 修改C驱动文件使用我们的包装头文件
+  sed -i 's/#include <klee\/klee.h>/#include "klee_wrappers.h"/' aes128_driver.c
+fi
+
 echo "=== 开始编译AES128 C驱动 ==="
-$LLVM_BIN/clang -I $KLEE_INCLUDE -emit-llvm -c -g -O0 aes128_driver.c -o aes128_driver.bc
+$LLVM_BIN/clang $INCLUDE_PATH -emit-llvm -c -g -O0 aes128_driver.c -o aes128_driver.bc
 
 echo "=== 构建lrwn库 ==="
 cd ..
+# 删除对klee-sys的依赖
 cargo build -p lrwn --features="klee_analysis"
 
 echo "=== 将aes128.rs编译为LLVM位码 ==="

@@ -8,7 +8,8 @@
  *   klee --libc=uclibc --posix-runtime aes128_driver.bc
  */
 
-#include <klee/klee.h>
+/* 使用包装头文件，避免依赖KLEE头文件位置 */
+#include "klee_wrappers.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

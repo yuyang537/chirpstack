@@ -4,12 +4,18 @@
 set -e
 LLVM_BIN="/usr/lib/llvm-14/bin"
 
+# 在编译之前确认klee_entry.rs中的代码正确引用了KLEE函数
+echo "检查KLEE入口文件..."
+grep -q "c_void, c_char" klee_entry.rs || echo "警告: 可能需要更新类型定义"
+
 echo "=== 构建lrwn库 ==="
 cd ..
+# 不要依赖klee-sys
 cargo build -p lrwn --features="klee_analysis"
 
 echo "=== 编译Rust KLEE入口 ==="
 cd klee-chirpstack
+# 在入口文件中，我们直接使用extern "C" 声明KLEE函数，而不依赖klee-sys
 rustc --crate-type=lib \
       --emit=llvm-bc \
       -L "../target/debug/deps" \
