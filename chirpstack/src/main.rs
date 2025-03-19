@@ -49,9 +49,11 @@ extern crate diesel;
 extern crate anyhow;
 
 use std::path::Path;
+use std::str::FromStr;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use tracing_subscriber::filter;
 
 use lrwn::EUI64;
 
@@ -59,7 +61,7 @@ use lrwn::EUI64;
 #[cfg(feature = "klee")]
 extern crate klee_sys;
 #[cfg(feature = "klee")]
-use klee_sys::{klee_assume, klee_assert, klee_make_symbolic};
+use klee_sys::{klee_assume, klee_make_symbolic};
 
 mod adr;
 mod api;
@@ -196,10 +198,8 @@ async fn main() -> Result<()> {
 
 #[cfg(feature = "klee")]
 async fn run_klee_symbolic_execution() -> Result<()> {
-    use lrwn::{DevAddr, AES128Key, MACVersion, MType, Major, MHDR, FCtrl, FHDR, FRMPayload, MACPayload, PhyPayload, Payload as LrwnPayload};
+    use std::mem::size_of;
     use tracing::info;
-    
-    info!("运行KLEE符号执行分析...");
     
     // 设置默认配置
     let config_path = Path::new("./configuration");
@@ -365,7 +365,7 @@ async fn analyze_security_sensitive_operations(
         phy.encrypt_frm_payload(&app_key)?;
         
         // 保存加密后的数据
-        let _encrypted_data = if let LrwnPayload::MACPayload(ref pl) = phy.payload {
+        let encrypted_data = if let LrwnPayload::MACPayload(ref pl) = phy.payload {
             if let Some(ref frm_payload) = pl.frm_payload {
                 frm_payload.to_vec()?
             } else {

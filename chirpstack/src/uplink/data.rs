@@ -1481,8 +1481,10 @@ pub async fn analyze_uplink_data_with_klee(
     nwk_s_enc_key: lrwn::AES128Key,
     app_s_key: lrwn::AES128Key,
 ) -> Result<(), anyhow::Error> {
+    use anyhow::Context;
+    use chrono::Utc;
     use lrwn::{MACVersion, MType, Major, MHDR, PhyPayload, Payload, MACPayload, FHDR, FCtrl, FRMPayload};
-    use tracing::info;
+    use tracing::{info, error};
     
     info!("使用KLEE分析上行数据处理流程");
     
@@ -1730,11 +1732,12 @@ pub async fn analyze_uplink_data_with_klee(
         let _encrypted_fopts = if let Payload::MACPayload(ref pl) = phy.payload {
             if !pl.fhdr.f_opts.to_vec()?.is_empty() {
                 // FOpts有内容，需要解密
-                let mut temp_phy = phy.clone();
-                temp_phy.decrypt_f_opts(&nwk_s_enc_key)?;
-                if let Payload::MACPayload(ref pl) = temp_phy.payload {
-                    decrypted_fopts = pl.fhdr.f_opts.to_vec()?;
-                }
+                decrypted_fopts = lrwn::encryption::decrypt_fopts(
+                    &nwk_s_enc_key,
+                    &dev_addr,
+                    symbolic_f_cnt,
+                    &pl.fhdr.f_opts.to_vec()?,
+                )?;
             }
         };
         
