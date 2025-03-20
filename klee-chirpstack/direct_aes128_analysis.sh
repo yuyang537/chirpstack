@@ -110,7 +110,7 @@ echo "2. 查找兼容的Rust工具链..."
 if command -v rustup &> /dev/null; then
     echo "发现rustup，尝试安装兼容的工具链..."
     # 尝试安装与LLVM 14兼容的Rust版本
-    COMPATIBLE_RUST="1.68.0"
+    COMPATIBLE_RUST="1.60.0"
     rustup toolchain install "$COMPATIBLE_RUST" --profile minimal || true
     RUSTC="rustup run $COMPATIBLE_RUST rustc"
     echo "使用Rust $COMPATIBLE_RUST 编译"
@@ -121,11 +121,13 @@ fi
 
 # 尝试编译为LLVM-IR (文本格式)，而不是位码
 echo "3. 编译Rust库为LLVM IR..."
+RUSTFLAGS="-C linker=rust-lld" \
 $RUSTC --crate-type=lib \
       --emit=llvm-ir \
       -C debuginfo=2 \
       -C opt-level=0 \
       -C panic=abort \
+      --target x86_64-unknown-linux-gnu \
       simple_aes128.rs
 
 # 如果生成了llvm-ir，转换为与LLVM 14兼容的位码
@@ -140,6 +142,7 @@ else
           -C debuginfo=2 \
           -C opt-level=0 \
           -C panic=abort \
+          --target=x86_64-unknown-linux-gnu
           -C llvm-args=-opaque-pointers=0 \
           simple_aes128.rs
 fi
@@ -205,7 +208,7 @@ EOF
 
     # 编译C版本为LLVM位码
     echo "编译C版本为LLVM位码..."
-    $LLVM_BIN/clang -emit-llvm -c -g -O0 simple_aes128.c -o simple_aes128.bc
+    $LLVM_BIN/clang -emit-llvm -target x86_64-unknown-linux-gnu -c -g -O0 simple_aes128.c -o simple_aes128.bc
 fi
 
 # 5. 准备C驱动文件
@@ -219,7 +222,14 @@ sed -i 's|#include <klee/klee.h>|#include "klee_wrappers.h"|' aes128_driver.c
 
 # 6. 编译C驱动为LLVM位码
 echo "6. 编译C驱动为LLVM位码..."
-$LLVM_BIN/clang -I . -emit-llvm -c -g -O0 aes128_driver.c -o aes128_driver.bc
+# 修改C驱动编译命令：
+$LLVM_BIN/clang -I . \
+                -emit-llvm \
+                -target x86_64-unknown-linux-gnu \
+                -march=x86-64 \
+                -c -g -O0 \
+                aes128_driver.c \
+                -o aes128_driver.bc
 
 # 7. 链接Rust/C库和C驱动
 echo "7. 链接库和C驱动..."
@@ -227,7 +237,7 @@ $LLVM_BIN/llvm-link simple_aes128.bc aes128_driver.bc -o aes128_linked.bc
 
 # 8. 运行KLEE分析
 echo "8. 运行KLEE符号执行分析..."
-klee --libc=uclibc --posix-runtime --emit-all-errors aes128_linked.bc
+klee --libc=klee --emit-all-errors aes128_linked.bc
 
 # 9. 分析结果
 echo "9. 分析KLEE结果..."
